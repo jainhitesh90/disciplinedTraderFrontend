@@ -4,5 +4,6 @@ export const endpoints = {
   user: '/user',
   brokers: '/brokers',
   brokerMapping: '/user/broker-mapping',
+  markBrokerAsConnected: '/user/mark-broker-as-connected',
   orders: '/orders',
 } as const;

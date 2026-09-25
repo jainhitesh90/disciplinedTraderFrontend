@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Image, Pressable, View, type ImageSourcePropType } from 'react-native';
 
 import { ApiError, api, endpoints } from '@/api';
-import { AppWebView, openInBrowser } from '@/components/AppWebView';
+import { openInBrowser } from '@/browser/openInBrowser';
 import { CustomText } from '@/components/CustomText';
 import { GrowwConnectModal } from '@/components/GrowwConnectModal';
 import { Loader } from '@/components/Loader';
@@ -16,6 +16,14 @@ type Broker = {
   brokerLinkUrl: string;
 };
 
+type BrokerMapping = {
+  brokerStatus: string;
+};
+
+type User = {
+  brokerMapping: BrokerMapping | null;
+};
+
 const brokerLogos: Record<string, ImageSourcePropType> = {
   groww: require('../../../assets/images/groww.png'),
   upstox: require('../../../assets/images/upstox.jpeg'),
@@ -26,8 +34,8 @@ export function ConnectBrokerScreen() {
   const [brokers, setBrokers] = useState<Broker[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedBroker, setSelectedBroker] = useState<Broker | null>(null);
   const [growwBroker, setGrowwBroker] = useState<Broker | null>(null);
+  const [brokerMapping, setBrokerMapping] = useState<BrokerMapping | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -54,6 +62,15 @@ export function ConnectBrokerScreen() {
           setLoading(false);
         }
       });
+
+    api
+      .get<User>(endpoints.user)
+      .then((data) => {
+        if (!cancelled) {
+          setBrokerMapping(data.brokerMapping ?? null);
+        }
+      })
+      .catch(() => {});
 
     return () => {
       cancelled = true;
@@ -89,10 +106,9 @@ export function ConnectBrokerScreen() {
                   setGrowwBroker(broker);
                   return;
                 }
-                if (!broker.brokerLinkUrl || openInBrowser(broker.brokerLinkUrl)) {
-                  return;
+                if (broker.brokerLinkUrl) {
+                  openInBrowser(broker.brokerLinkUrl);
                 }
-                setSelectedBroker(broker);
               }}
               style={[styles.cell, { backgroundColor: colors.background, borderColor: colors.border }]}
             >
@@ -109,13 +125,8 @@ export function ConnectBrokerScreen() {
       <GrowwConnectModal
         visible={growwBroker != null}
         brokerLinkUrl={growwBroker?.brokerLinkUrl ?? ''}
+        brokerMapping={brokerMapping}
         onDismiss={() => setGrowwBroker(null)}
-      />
-      <AppWebView
-        visible={selectedBroker != null}
-        url={selectedBroker?.brokerLinkUrl ?? ''}
-        title={selectedBroker?.brokerName ?? ''}
-        onDismiss={() => setSelectedBroker(null)}
       />
     </Screen>
   );

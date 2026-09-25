@@ -1,6 +1,5 @@
 export { AppModal } from '@/components/AppModal';
 export { AppSnackbar } from '@/components/AppSnackbar';
-export { AppWebView, openInBrowser } from '@/components/AppWebView';
 export { Card } from '@/components/Card';
 export { CustomButton } from '@/components/CustomButton';
 export { CustomText } from '@/components/CustomText';

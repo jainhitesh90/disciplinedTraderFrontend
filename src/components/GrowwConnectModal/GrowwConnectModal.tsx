@@ -3,26 +3,38 @@ import { router } from 'expo-router';
 
 import { ApiError, api, endpoints } from '@/api';
 import { AppModal } from '@/components/AppModal';
-import { AppWebView, openInBrowser } from '@/components/AppWebView';
 import { CustomButton } from '@/components/CustomButton';
 import { CustomText } from '@/components/CustomText';
 import { styles } from '@/components/GrowwConnectModal/styles';
 import { TextField } from '@/components/TextField';
+import { openInBrowser } from '@/browser/openInBrowser';
+
+type BrokerMapping = {
+  brokerStatus: string;
+} | null;
 
 type GrowwConnectModalProps = {
   visible: boolean;
   brokerLinkUrl: string;
+  brokerMapping: BrokerMapping;
   onDismiss: () => void;
 };
 
-export function GrowwConnectModal({ visible, brokerLinkUrl, onDismiss }: GrowwConnectModalProps) {
+const generateTokenGuide =
+  'to generate the token on groww, copy the api-key and api-secret once generated and paste in below input boxes, and save';
+
+export function GrowwConnectModal({
+  visible,
+  brokerLinkUrl,
+  brokerMapping,
+  onDismiss,
+}: GrowwConnectModalProps) {
   const [apiKey, setApiKey] = useState('');
   const [apiSecret, setApiSecret] = useState('');
   const [apiKeyError, setApiKeyError] = useState<string | null>(null);
   const [apiSecretError, setApiSecretError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [linkOpen, setLinkOpen] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -34,14 +46,49 @@ export function GrowwConnectModal({ visible, brokerLinkUrl, onDismiss }: GrowwCo
     setApiSecretError(null);
     setFormError(null);
     setSaving(false);
-    setLinkOpen(false);
   }, [visible]);
 
+  const disconnected = brokerMapping?.brokerStatus === 'DISCONNECTED';
+
   function openGrowwLink() {
-    if (!brokerLinkUrl || openInBrowser(brokerLinkUrl)) {
+    if (brokerLinkUrl) {
+      openInBrowser(brokerLinkUrl);
+    }
+  }
+
+  function leaveToHome() {
+    onDismiss();
+    if (router.canGoBack()) {
+      router.back();
       return;
     }
-    setLinkOpen(true);
+    router.replace('/home');
+  }
+
+  async function done() {
+    if (saving) {
+      return;
+    }
+
+    setSaving(true);
+    setFormError(null);
+    try {
+      await api.post(endpoints.markBrokerAsConnected, {
+        brokerId: 'groww',
+      }, {
+        headers: { Accept: '*/*' },
+      });
+      leaveToHome();
+    } catch (err: unknown) {
+      if (err instanceof ApiError) {
+        setFormError(err.message);
+      } else if (err instanceof Error) {
+        setFormError(err.message);
+      } else {
+        setFormError('Request failed');
+      }
+      setSaving(false);
+    }
   }
 
   async function save() {
@@ -65,12 +112,7 @@ export function GrowwConnectModal({ visible, brokerLinkUrl, onDismiss }: GrowwCo
       }, {
         headers: { Accept: '*/*' },
       });
-      onDismiss();
-      if (router.canGoBack()) {
-        router.back();
-        return;
-      }
-      router.replace('/home');
+      leaveToHome();
     } catch (err: unknown) {
       if (err instanceof ApiError) {
         setFormError(err.message);
@@ -84,47 +126,54 @@ export function GrowwConnectModal({ visible, brokerLinkUrl, onDismiss }: GrowwCo
   }
 
   return (
-    <>
-      <AppModal visible={visible} title="Connect Groww" onDismiss={onDismiss}>
+    <AppModal visible={visible} title="Connect Groww" onDismiss={onDismiss}>
         <CustomText id="groww-guide" variant="body" style={styles.guide}>
           <CustomText id="groww-guide-link" variant="link" onPress={openGrowwLink}>
             Click here
           </CustomText>
           {' '}
-          to generate the token on groww, copy the api-key and api-secret once generated and paste in below input boxes, and save
+          {disconnected
+            ? 'approve the token, and close the dialog once approved'
+            : generateTokenGuide}
         </CustomText>
-        <TextField
-          id="groww-api-key"
-          label="API key"
-          value={apiKey}
-          onChangeText={setApiKey}
-          error={apiKeyError ?? undefined}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-        <TextField
-          id="groww-api-secret"
-          label="API secret"
-          value={apiSecret}
-          onChangeText={setApiSecret}
-          error={apiSecretError ?? undefined}
-          secureTextEntry
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-        {formError ? (
-          <CustomText id="groww-save-error" variant="error">
-            {formError}
-          </CustomText>
-        ) : null}
-        <CustomButton id="groww-save" label="Save" onPress={() => void save()} loading={saving} />
-      </AppModal>
-      <AppWebView
-        visible={linkOpen}
-        url={brokerLinkUrl}
-        title="Groww"
-        onDismiss={() => setLinkOpen(false)}
-      />
-    </>
+        {disconnected ? (
+          <>
+            {formError ? (
+              <CustomText id="groww-done-error" variant="error">
+                {formError}
+              </CustomText>
+            ) : null}
+            <CustomButton id="groww-done" label="Done" onPress={() => void done()} loading={saving} />
+          </>
+        ) : (
+          <>
+            <TextField
+              id="groww-api-key"
+              label="API key"
+              value={apiKey}
+              onChangeText={setApiKey}
+              error={apiKeyError ?? undefined}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <TextField
+              id="groww-api-secret"
+              label="API secret"
+              value={apiSecret}
+              onChangeText={setApiSecret}
+              error={apiSecretError ?? undefined}
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            {formError ? (
+              <CustomText id="groww-save-error" variant="error">
+                {formError}
+              </CustomText>
+            ) : null}
+            <CustomButton id="groww-save" label="Save" onPress={() => void save()} loading={saving} />
+          </>
+        )}
+    </AppModal>
   );
 }
