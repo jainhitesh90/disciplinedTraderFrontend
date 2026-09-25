@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
 
 import { ApiError, api, endpoints } from '@/api';
+import { CustomText } from '@/components';
+import { useTheme, type ThemeColors } from '@/theme';
 
 type Order = {
   groww_order_id: string;
@@ -17,15 +19,15 @@ type Order = {
   created_at: string;
 };
 
-type OrdersResponse = {
-  brokerId?: string;
-  status?: string;
+type OrdersData = {
+  status?: string | null;
   payload?: {
     order_list?: Order[];
   };
 };
 
 export function DashboardScreen() {
+  const { colors } = useTheme();
   const [orders, setOrders] = useState<Order[]>([]);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +37,7 @@ export function DashboardScreen() {
     let cancelled = false;
 
     api
-      .get<OrdersResponse>(endpoints.orders, {
+      .get<OrdersData>(endpoints.orders, {
         query: { segment: 'FNO', page: 0, page_size: 100 },
         headers: { Accept: '*/*' },
       })
@@ -68,42 +70,57 @@ export function DashboardScreen() {
   }, []);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Dashboard</Text>
-      <Text style={styles.subtitle}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <CustomText id="dashboard-title" variant="large">
+        Dashboard
+      </CustomText>
+      <CustomText id="dashboard-subtitle" variant="body" style={[styles.subtitle, { color: colors.textMuted }]}>
         F&O orders{status ? ` · ${status}` : ''}
-      </Text>
-      {loading ? <ActivityIndicator color="#F8FAFC" /> : null}
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      </CustomText>
+      {loading ? <ActivityIndicator color={colors.text} /> : null}
+      {error ? (
+        <CustomText id="dashboard-error" variant="error" style={styles.error}>
+          {error}
+        </CustomText>
+      ) : null}
       {!loading && !error && orders.length === 0 ? (
-        <Text style={styles.empty}>No orders</Text>
+        <CustomText id="dashboard-empty" variant="body" style={{ color: colors.textMuted }}>
+          No orders
+        </CustomText>
       ) : null}
       <FlatList
         data={orders}
         keyExtractor={(item) => item.groww_order_id}
         contentContainerStyle={styles.list}
-        renderItem={({ item }) => <OrderRow order={item} />}
+        renderItem={({ item }) => <OrderRow order={item} colors={colors} />}
       />
     </View>
   );
 }
 
-function OrderRow({ order }: { order: Order }) {
-  const sideColor = order.transaction_type === 'BUY' ? '#4ADE80' : '#F87171';
+function OrderRow({ order, colors }: { order: Order; colors: ThemeColors }) {
+  const sideColor = order.transaction_type === 'BUY' ? colors.success : colors.danger;
+  const id = order.groww_order_id;
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: colors.surface }]}>
       <View style={styles.row}>
-        <Text style={styles.symbol}>{order.trading_symbol}</Text>
-        <Text style={[styles.side, { color: sideColor }]}>{order.transaction_type}</Text>
+        <CustomText id={`order-${id}-symbol`} variant="body" style={styles.symbol}>
+          {order.trading_symbol}
+        </CustomText>
+        <CustomText id={`order-${id}-side`} variant="label" style={{ color: sideColor }}>
+          {order.transaction_type}
+        </CustomText>
       </View>
-      <Text style={styles.meta}>
+      <CustomText id={`order-${id}-status`} variant="small" style={{ color: colors.textSecondary }}>
         {order.order_status} · {order.order_type} · {order.exchange} · {order.product}
-      </Text>
-      <Text style={styles.meta}>
+      </CustomText>
+      <CustomText id={`order-${id}-qty`} variant="small" style={{ color: colors.textSecondary }}>
         Qty {order.filled_quantity}/{order.quantity} · Avg {formatPrice(order.average_fill_price)}
-      </Text>
-      <Text style={styles.time}>{order.created_at}</Text>
+      </CustomText>
+      <CustomText id={`order-${id}-time`} variant="caption">
+        {order.created_at}
+      </CustomText>
     </View>
   );
 }
@@ -115,36 +132,21 @@ function formatPrice(value: number): string {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B1220',
     paddingTop: 48,
     paddingHorizontal: 20,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#F8FAFC',
   },
   subtitle: {
     marginTop: 6,
     marginBottom: 16,
-    fontSize: 16,
-    color: '#94A3B8',
   },
   error: {
     marginBottom: 12,
-    fontSize: 16,
-    color: '#FCA5A5',
-  },
-  empty: {
-    fontSize: 16,
-    color: '#94A3B8',
   },
   list: {
     gap: 12,
     paddingBottom: 32,
   },
   card: {
-    backgroundColor: '#111827',
     borderRadius: 12,
     padding: 16,
     gap: 6,
@@ -157,20 +159,6 @@ const styles = StyleSheet.create({
   },
   symbol: {
     flex: 1,
-    fontSize: 16,
     fontWeight: '600',
-    color: '#F8FAFC',
-  },
-  side: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  meta: {
-    fontSize: 14,
-    color: '#CBD5E1',
-  },
-  time: {
-    fontSize: 12,
-    color: '#64748B',
   },
 });

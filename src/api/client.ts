@@ -1,3 +1,7 @@
+import axios from 'axios';
+
+import { readAuthSession } from '@/api/session';
+
 const DEFAULT_BASE_URL = 'http://localhost:3000';
 
 export type QueryValue = string | number | boolean | null | undefined;
@@ -38,43 +42,41 @@ function joinUrl(baseUrl: string, path: string): string {
   return `${base}${suffix}`;
 }
 
-function buildQuery(query: Record<string, QueryValue> | undefined): string {
+function buildQuery(query: Record<string, QueryValue> | undefined): Record<string, string> {
+  const params: Record<string, string> = {};
   if (!query) {
-    return '';
+    return params;
   }
 
-  const params = new URLSearchParams();
   for (const [key, value] of Object.entries(query)) {
     if (value === undefined || value === null) {
       continue;
     }
-    params.append(key, String(value));
+    params[key] = String(value);
   }
 
-  const serialized = params.toString();
-  return serialized ? `?${serialized}` : '';
+  return params;
 }
 
-async function parseBody(response: Response): Promise<unknown> {
-  if (response.status === 204) {
-    return null;
+export type ApiResponse<T> = {
+  statusCode: number;
+  success: boolean;
+  data: T;
+  message: string | null;
+  errorMessage: string | null;
+};
+
+function isApiResponse(body: unknown): body is ApiResponse<unknown> {
+  if (!body || typeof body !== 'object') {
+    return false;
   }
 
-  const text = await response.text();
-  if (!text) {
-    return null;
-  }
+  const record = body as Record<string, unknown>;
+  return typeof record.success === 'boolean' && 'data' in record;
+}
 
-  const contentType = response.headers.get('content-type') ?? '';
-  if (!contentType.includes('application/json')) {
-    return text;
-  }
-
-  try {
-    return JSON.parse(text) as unknown;
-  } catch {
-    return text;
-  }
+function textOrNull(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value : null;
 }
 
 function extractMessage(body: unknown): string | null {
@@ -87,16 +89,22 @@ function extractMessage(body: unknown): string | null {
   }
 
   const record = body as Record<string, unknown>;
-  if (typeof record.message === 'string' && record.message.trim()) {
-    return record.message;
+  const errorMessage = textOrNull(record.errorMessage);
+  if (errorMessage) {
+    return errorMessage;
   }
 
-  const errorMessage = record.errorMessage;
-  if (errorMessage && typeof errorMessage === 'object' && 'message' in errorMessage) {
-    const nested = (errorMessage as { message: unknown }).message;
-    if (typeof nested === 'string' && nested.trim()) {
-      return nested;
-    }
+  const message = textOrNull(record.message);
+  if (message) {
+    return message;
+  }
+
+  if (typeof record.errorMsg === 'string' && record.errorMsg.trim()) {
+    return record.errorMsg;
+  }
+
+  if (record.errorMessage && typeof record.errorMessage === 'object' && 'message' in record.errorMessage) {
+    return textOrNull((record.errorMessage as { message: unknown }).message);
   }
 
   return null;
@@ -132,43 +140,57 @@ export class ApiClient {
   }
 
   async request<T>(options: InternalRequestOptions): Promise<T> {
-    const headers = new Headers(options.headers);
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+      ...options.headers,
+    };
 
     if (this.accessToken) {
-      headers.set('Authorization', `Bearer ${this.accessToken}`);
+      headers.Authorization = `Bearer ${this.accessToken}`;
     }
-    if (options.body !== undefined && !headers.has('Content-Type')) {
-      headers.set('Content-Type', 'application/json');
-    }
-    if (!headers.has('Accept')) {
-      headers.set('Accept', 'application/json');
+    if (options.body !== undefined && !headers['Content-Type']) {
+      headers['Content-Type'] = 'application/json';
     }
 
-    const url = `${joinUrl(this.baseUrl, options.path)}${buildQuery(options.query)}`;
+    const params = buildQuery(options.query);
 
-    let response: Response;
+    let status = 0;
+    let body: unknown = null;
+
     try {
-      response = await fetch(url, {
+      const response = await axios.request({
+        url: joinUrl(this.baseUrl, options.path),
         method: options.method,
         headers,
-        body: options.body === undefined ? undefined : JSON.stringify(options.body),
+        params,
+        data: options.body,
         signal: options.signal,
+        validateStatus: () => true,
       });
+      status = response.status;
+      body = response.data;
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Network request failed';
+      const message = axios.isAxiosError(error) ? error.message : 'Network request failed';
       throw new ApiError(message, 0, null);
     }
 
-    const body = await parseBody(response);
-    if (!response.ok) {
-      const message = extractMessage(body) ?? `Request failed with status ${response.status}`;
-      throw new ApiError(message, response.status, body);
+    const envelope = isApiResponse(body) ? body : null;
+    const failed = status < 200 || status >= 300 || envelope?.success === false;
+
+    if (failed) {
+      const message = extractMessage(body) ?? `Request failed with status ${status}`;
+      throw new ApiError(message, envelope?.statusCode ?? status, body);
     }
 
-    return body as T;
+    if (!envelope) {
+      throw new ApiError('Unexpected response from server', status, body);
+    }
+
+    return envelope.data as T;
   }
 }
 
-const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL ?? DEFAULT_BASE_URL;
+const configuredBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL ?? DEFAULT_BASE_URL;
 
-export const api = new ApiClient(baseUrl);
+export const api = new ApiClient(configuredBaseUrl);
+api.setAccessToken(readAuthSession()?.token ?? null);
