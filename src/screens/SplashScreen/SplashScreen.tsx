@@ -1,15 +1,14 @@
 import { router } from 'expo-router';
 import { useEffect } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { Image } from 'react-native';
 
 import { readAuthSession } from '@/api';
-import { useTheme } from '@/theme';
+import { Screen } from '@/components';
+import { styles } from '@/screens/SplashScreen/styles';
 
 const SPLASH_DURATION_MS = 1000;
 
 export function SplashScreen() {
-  const { colors } = useTheme();
-
   useEffect(() => {
     const timeout = setTimeout(() => {
       const token = readAuthSession()?.token;
@@ -20,25 +19,13 @@ export function SplashScreen() {
   }, []);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <Screen style={styles.container}>
       <Image
         accessibilityLabel="Disciplined Trading"
-        source={require('../../assets/images/splash-icon.png')}
+        source={require('../../../assets/images/splash-icon.png')}
         style={styles.logo}
         resizeMode="contain"
       />
-    </View>
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logo: {
-    width: 120,
-    height: 120,
-  },
-});

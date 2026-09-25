@@ -1,6 +1,8 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { PaperProvider } from 'react-native-paper';
 
 import { DEFAULT_THEME, themes, type ThemeColors, type ThemeName } from '@/theme/colors';
+import { createPaperTheme } from '@/theme/paperTheme';
 
 type ThemeContextValue = {
   theme: ThemeName;
@@ -13,6 +15,7 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<ThemeName>(DEFAULT_THEME);
+  const paperTheme = useMemo(() => createPaperTheme(theme), [theme]);
 
   const value = useMemo<ThemeContextValue>(
     () => ({
@@ -24,7 +27,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     [theme],
   );
 
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+  return (
+    <ThemeContext.Provider value={value}>
+      <PaperProvider theme={paperTheme}>{children}</PaperProvider>
+    </ThemeContext.Provider>
+  );
 }
 
 export function useTheme(): ThemeContextValue {

@@ -15,6 +15,8 @@ export type ThemeColors = {
   danger: string;
   success: string;
   chip: string;
+  warning: string;
+  onWarning: string;
 };
 
 // Groww brand green (#00B386) with the light and dark surfaces used in the Groww app.
@@ -34,6 +36,8 @@ export const themes: Record<ThemeName, ThemeColors> = {
     danger: '#EB5B3C',
     success: '#00B386',
     chip: '#44475B',
+    warning: '#F5A524',
+    onWarning: '#1A1408',
   },
   dark: {
     background: '#121212',
@@ -50,6 +54,8 @@ export const themes: Record<ThemeName, ThemeColors> = {
     danger: '#EB5B3C',
     success: '#00B386',
     chip: '#FFFFFF',
+    warning: '#F5A524',
+    onWarning: '#1A1408',
   },
 };
 

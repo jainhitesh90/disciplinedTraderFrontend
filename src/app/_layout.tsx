@@ -1,12 +1,18 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
+import { DialogProvider } from '@/components/AppDialog';
+import { ToastProvider } from '@/components/AppToast';
 import { ThemeProvider, useTheme } from '@/theme';
 
 export default function RootLayout() {
   return (
     <ThemeProvider>
-      <RootNavigator />
+      <ToastProvider>
+        <DialogProvider>
+          <RootNavigator />
+        </DialogProvider>
+      </ToastProvider>
     </ThemeProvider>
   );
 }

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
+import { FlatList, View } from 'react-native';
 
 import { ApiError, api, endpoints } from '@/api';
-import { CustomText } from '@/components';
-import { useTheme, type ThemeColors } from '@/theme';
+import { Card, CustomText, Loader, Screen } from '@/components';
+import { styles } from '@/screens/DashboardScreen/styles';
 
 type Order = {
   groww_order_id: string;
@@ -27,7 +27,6 @@ type OrdersData = {
 };
 
 export function DashboardScreen() {
-  const { colors } = useTheme();
   const [orders, setOrders] = useState<Order[]>([]);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -70,21 +69,21 @@ export function DashboardScreen() {
   }, []);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <Screen style={styles.container}>
       <CustomText id="dashboard-title" variant="large">
         Dashboard
       </CustomText>
-      <CustomText id="dashboard-subtitle" variant="body" style={[styles.subtitle, { color: colors.textMuted }]}>
+      <CustomText id="dashboard-subtitle" variant="small" style={styles.subtitle}>
         F&O orders{status ? ` · ${status}` : ''}
       </CustomText>
-      {loading ? <ActivityIndicator color={colors.text} /> : null}
+      {loading ? <Loader /> : null}
       {error ? (
         <CustomText id="dashboard-error" variant="error" style={styles.error}>
           {error}
         </CustomText>
       ) : null}
       {!loading && !error && orders.length === 0 ? (
-        <CustomText id="dashboard-empty" variant="body" style={{ color: colors.textMuted }}>
+        <CustomText id="dashboard-empty" variant="small">
           No orders
         </CustomText>
       ) : null}
@@ -92,73 +91,38 @@ export function DashboardScreen() {
         data={orders}
         keyExtractor={(item) => item.groww_order_id}
         contentContainerStyle={styles.list}
-        renderItem={({ item }) => <OrderRow order={item} colors={colors} />}
+        renderItem={({ item }) => <OrderRow order={item} />}
       />
-    </View>
+    </Screen>
   );
 }
 
-function OrderRow({ order, colors }: { order: Order; colors: ThemeColors }) {
-  const sideColor = order.transaction_type === 'BUY' ? colors.success : colors.danger;
+function OrderRow({ order }: { order: Order }) {
   const id = order.groww_order_id;
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.surface }]}>
+    <Card style={styles.orderCard}>
       <View style={styles.row}>
         <CustomText id={`order-${id}-symbol`} variant="body" style={styles.symbol}>
           {order.trading_symbol}
         </CustomText>
-        <CustomText id={`order-${id}-side`} variant="label" style={{ color: sideColor }}>
+        <CustomText id={`order-${id}-side`} variant={order.transaction_type === 'BUY' ? 'success' : 'danger'}>
           {order.transaction_type}
         </CustomText>
       </View>
-      <CustomText id={`order-${id}-status`} variant="small" style={{ color: colors.textSecondary }}>
+      <CustomText id={`order-${id}-status`} variant="small">
         {order.order_status} · {order.order_type} · {order.exchange} · {order.product}
       </CustomText>
-      <CustomText id={`order-${id}-qty`} variant="small" style={{ color: colors.textSecondary }}>
+      <CustomText id={`order-${id}-qty`} variant="small">
         Qty {order.filled_quantity}/{order.quantity} · Avg {formatPrice(order.average_fill_price)}
       </CustomText>
       <CustomText id={`order-${id}-time`} variant="caption">
         {order.created_at}
       </CustomText>
-    </View>
+    </Card>
   );
 }
 
 function formatPrice(value: number): string {
   return Number.isFinite(value) ? value.toFixed(2) : '—';
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingTop: 48,
-    paddingHorizontal: 20,
-  },
-  subtitle: {
-    marginTop: 6,
-    marginBottom: 16,
-  },
-  error: {
-    marginBottom: 12,
-  },
-  list: {
-    gap: 12,
-    paddingBottom: 32,
-  },
-  card: {
-    borderRadius: 12,
-    padding: 16,
-    gap: 6,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 12,
-  },
-  symbol: {
-    flex: 1,
-    fontWeight: '600',
-  },
-});

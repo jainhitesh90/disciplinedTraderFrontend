@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
 import { ApiError, api, endpoints } from '@/api';
-import { CustomText } from '@/components';
-import { useTheme } from '@/theme';
+import { Card, CustomText, Loader, Screen } from '@/components';
+import { styles } from '@/screens/ProfileScreen/styles';
 
 type User = {
   userId?: string;
@@ -14,7 +14,6 @@ type User = {
 };
 
 export function ProfileScreen() {
-  const { colors } = useTheme();
   const [account, setAccount] = useState<User | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -53,28 +52,28 @@ export function ProfileScreen() {
   const subtitle = account?.name || account?.emailId || 'Account';
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <Screen style={styles.container}>
       <CustomText id="profile-title" variant="large">
         Profile
       </CustomText>
-      <CustomText id="profile-subtitle" variant="body" style={[styles.subtitle, { color: colors.textMuted }]}>
+      <CustomText id="profile-subtitle" variant="small" style={styles.subtitle}>
         {subtitle}
       </CustomText>
-      {loading ? <ActivityIndicator color={colors.text} /> : null}
+      {loading ? <Loader /> : null}
       {error ? (
         <CustomText id="profile-error" variant="error" style={styles.error}>
           {error}
         </CustomText>
       ) : null}
       {!loading && !error && !account ? (
-        <CustomText id="profile-empty" variant="body" style={{ color: colors.textMuted }}>
+        <CustomText id="profile-empty" variant="small">
           No profile
         </CustomText>
       ) : null}
       {account ? (
         <ScrollView style={styles.scroll} contentContainerStyle={styles.list}>
-          <View style={[styles.card, { backgroundColor: colors.surface }]}>
-            <CustomText id="profile-account-title" variant="label" style={[styles.cardTitle, { color: colors.textMuted }]}>
+          <Card>
+            <CustomText id="profile-account-title" variant="caption" style={styles.cardTitle}>
               Account
             </CustomText>
             <Field id="profile-name" label="Name" value={displayValue(account.name)} />
@@ -82,10 +81,10 @@ export function ProfileScreen() {
             <Field id="profile-phone" label="Phone" value={displayValue(account.phoneNo)} />
             <Field id="profile-broker-id" label="Broker ID" value={displayValue(account.brokerMapping?.brokerId)} />
             <Field id="profile-broker-token" label="Broker token" value={displayValue(account.brokerMapping?.brokerToken)} />
-          </View>
+          </Card>
         </ScrollView>
       ) : null}
-    </View>
+    </Screen>
   );
 }
 
@@ -105,40 +104,3 @@ function Field({ id, label, value }: { id: string; label: string; value: string 
 function displayValue(value: string | null | undefined): string {
   return value?.trim() ? value : '—';
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingTop: 48,
-    paddingHorizontal: 20,
-  },
-  subtitle: {
-    marginTop: 6,
-    marginBottom: 16,
-  },
-  error: {
-    marginBottom: 12,
-  },
-  scroll: {
-    flex: 1,
-  },
-  list: {
-    gap: 12,
-    paddingBottom: 32,
-  },
-  card: {
-    borderRadius: 12,
-    padding: 16,
-    gap: 12,
-  },
-  cardTitle: {
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-  },
-  field: {
-    gap: 4,
-  },
-  fieldValue: {
-    fontWeight: '600',
-  },
-});
