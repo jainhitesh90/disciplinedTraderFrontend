@@ -39,7 +39,7 @@ export function AppHeader() {
           ) : (
             <Image
               accessibilityLabel="TradeNiyam"
-              source={require('../../../assets/images/splash-icon.png')}
+              source={require('../../../assets/app_logo.png')}
               style={styles.logo}
               resizeMode="contain"
             />

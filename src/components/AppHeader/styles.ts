@@ -17,8 +17,8 @@ export const styles = StyleSheet.create({
     marginRight: 12,
   },
   logo: {
-    width: 28,
-    height: 28,
+    width: 36,
+    height: 36,
   },
   back: {
     width: 28,
