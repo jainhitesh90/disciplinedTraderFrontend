@@ -3,7 +3,7 @@ import { FlatList, View } from 'react-native';
 
 import { ApiError, api, endpoints } from '@/api';
 import { Card, CustomText, Loader, Screen } from '@/components';
-import { styles } from '@/screens/DashboardScreen/styles';
+import { styles } from '@/screens/OrdersScreen/styles';
 
 type Order = {
   groww_order_id: string;
@@ -26,7 +26,7 @@ type OrdersData = {
   };
 };
 
-export function DashboardScreen() {
+export function OrdersScreen() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -70,20 +70,20 @@ export function DashboardScreen() {
 
   return (
     <Screen style={styles.container}>
-      <CustomText id="dashboard-title" variant="large">
-        Dashboard
+      <CustomText id="orders-title" variant="large">
+        Orders
       </CustomText>
-      <CustomText id="dashboard-subtitle" variant="small" style={styles.subtitle}>
+      <CustomText id="orders-subtitle" variant="small" style={styles.subtitle}>
         F&O orders{status ? ` · ${status}` : ''}
       </CustomText>
       {loading ? <Loader /> : null}
       {error ? (
-        <CustomText id="dashboard-error" variant="error" style={styles.error}>
+        <CustomText id="orders-error" variant="error" style={styles.error}>
           {error}
         </CustomText>
       ) : null}
       {!loading && !error && orders.length === 0 ? (
-        <CustomText id="dashboard-empty" variant="small">
+        <CustomText id="orders-empty" variant="small">
           No orders
         </CustomText>
       ) : null}

@@ -144,7 +144,7 @@ export function AuthScreen() {
       });
       saveAuthSession(data);
       api.setAccessToken(data.token);
-      router.replace('/home');
+      router.replace('/performance');
     } catch (err: unknown) {
       const message = err instanceof ApiError
         ? err.message

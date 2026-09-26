@@ -12,7 +12,7 @@ export function SplashScreen() {
   useEffect(() => {
     const timeout = setTimeout(() => {
       const token = readAuthSession()?.token;
-      router.replace(token ? '/home' : '/login');
+      router.replace(token ? '/performance' : '/login');
     }, SPLASH_DURATION_MS);
 
     return () => clearTimeout(timeout);
@@ -21,7 +21,7 @@ export function SplashScreen() {
   return (
     <Screen style={styles.container}>
       <Image
-        accessibilityLabel="Disciplined Trading"
+        accessibilityLabel="TradeNiyam"
         source={require('../../../assets/images/splash-icon.png')}
         style={styles.logo}
         resizeMode="contain"

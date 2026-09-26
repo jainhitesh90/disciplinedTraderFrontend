@@ -1,17 +1,17 @@
 {
   "expo": {
-    "name": "Disciplined Trading",
-    "slug": "DisciplinedTradingFrontend",
+    "name": "TradeNiyam",
+    "slug": "TradeNiyamUI",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "disciplinedtradingfrontend",
+    "scheme": "tradeniyamui",
     "userInterfaceStyle": "dark",
     "ios": {
       "icon": "./assets/expo.icon"
     },
     "android": {
-      "package": "com.disciplinedtrading.app",
+      "package": "com.tradeniyam.app",
       "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "backgroundColor": "#00B386",

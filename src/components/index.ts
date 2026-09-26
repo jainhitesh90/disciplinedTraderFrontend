@@ -1,5 +1,6 @@
+export { AppHeader } from '@/components/AppHeader';
+export { AppTabBar } from '@/components/AppTabBar';
 export { AppModal } from '@/components/AppModal';
-export { AppSnackbar } from '@/components/AppSnackbar';
 export { Card } from '@/components/Card';
 export { CustomButton } from '@/components/CustomButton';
 export { CustomText } from '@/components/CustomText';

@@ -62,7 +62,7 @@ export function GrowwConnectModal({
       router.back();
       return;
     }
-    router.replace('/home');
+    router.replace('/performance');
   }
 
   async function done() {

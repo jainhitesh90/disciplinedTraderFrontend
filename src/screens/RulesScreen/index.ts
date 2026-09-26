@@ -1,0 +1,1 @@
+export { RulesScreen } from '@/screens/RulesScreen/RulesScreen';
